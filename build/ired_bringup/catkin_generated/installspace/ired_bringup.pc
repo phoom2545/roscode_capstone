@@ -1,0 +1,8 @@
+prefix=/home/phoomiphat/ired_ws/install
+
+Name: ired_bringup
+Description: Description of ired_bringup
+Version: 2.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lired_bringup
+Requires: geometry_msgs ired_msgs nav_msgs robot_state_publisher roscpp sensor_msgs std_msgs tf

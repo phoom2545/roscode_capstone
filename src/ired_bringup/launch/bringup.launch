@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="urdf_file" default="$(find xacro)/xacro --inorder '$(find ired_bringup)/urdf/robot.urdf.xacro'"/>
+    <param name="robot_description" command="$(arg urdf_file)" />
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" value=""/>
+    </node>
+
+    <node name="ired_odom_node" pkg="ired_bringup" type="ired_odom_node"  output="screen">
+        <param name="base_frame" value="base_footprint"/>
+        <param name="joint_states_frame" value="base_footprint"/>
+        <param name="odom_frame" value="odom"/>
+        <param name="odom_tf_publish" value="true"/>
+        <param name="wheel_left_joint_name" value="wheel_left_joint"/>
+        <param name="wheel_right_joint_name" value="wheel_right_joint"/>
+    </node>
+
+    <!-- LiDAR -->
+    <arg name="lidar_frame" default="base_scan"/>
+    <arg name="lidar_port" default="/dev/ttyUSB0"/>
+    <include file="$(find rplidar_ros)/launch/rplidar_ros.launch">
+        <arg name="frame_id" value="$(arg lidar_frame)"/>
+        <arg name="serial_port" value="$(arg lidar_port)"/>
+    </include>
+
+    <!-- ROS Serial -->
+    <arg name="control_port" default="/dev/ttyUSB1"/>
+    <arg name="control_baud" default="115200"/>
+    <node name="ired_serial_node" pkg="rosserial_arduino" type="serial_node.py" output="screen" >
+        <param name="port" value="$(arg control_port)"/>
+        <param name="baud" value="$(arg control_baud)"/>
+    </node>
+
+</launch>

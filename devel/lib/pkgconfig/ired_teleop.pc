@@ -1,0 +1,8 @@
+prefix=/home/phoomiphat/ired_ws/devel
+
+Name: ired_teleop
+Description: Description of ired_teleop
+Version: 1.1.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: geometry_msgs rospy

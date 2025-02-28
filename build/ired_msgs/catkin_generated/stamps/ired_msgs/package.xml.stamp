@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ired_msgs</name>
+  <version>1.1.1</version>
+  <description>
+    IRED MESSAGE: This package is using for IRED robot as message type for ros topic.
+  </description>
+  <maintainer email="aimslabkmitl@gmail.com">AIMs Lab KMITL</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>std_msgs</depend>
+  <build_export_depend>message_runtime</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+</package>

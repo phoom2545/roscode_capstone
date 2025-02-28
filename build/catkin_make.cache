@@ -1,0 +1,2 @@
+ired_bringup:ired_movetogoal:ired_msgs:ired_navigation:ired_teleop:rosserial/rosserial_arduino:rosserial/rosserial_client:rosserial/rosserial_msgs:rosserial/rosserial_python:rplidar_ros:waypoint_navigation
+-DCATKIN_DEVEL_PREFIX=/home/phoomiphat/ired_ws/devel -DCMAKE_INSTALL_PREFIX=/home/phoomiphat/ired_ws/install -G Unix Makefiles

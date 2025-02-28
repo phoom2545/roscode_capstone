@@ -1,0 +1,8 @@
+prefix=/home/phoomiphat/ired_ws/devel
+
+Name: ired_navigation
+Description: Description of ired_navigation
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

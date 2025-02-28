@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node pkg="waypoint_navigation" type="waypoint_navigation.py" name="waypoint_navigation" output="screen"/>
+</launch>
