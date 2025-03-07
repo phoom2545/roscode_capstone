@@ -10,7 +10,7 @@ def main():
     # Initialize the components
     human_detector = HumanDetector()
     face_recognizer = FaceRecognizer()
-    wakeword_detector = WakewordDetector(listen_timeout=10, process_timeout=5)
+    wakeword_detector = WakewordDetector(listen_timeout=10, process_timeout=15)
 
     # Open the webcam
     cap = cv2.VideoCapture(0)
@@ -26,6 +26,8 @@ def main():
     recognized_name = None
     wakeword_thread = None
     process_completed = False
+    face_detection_start_time = None
+    min_detection_time = 2.0  # Minimum time (in seconds) to spend on face detection
 
     print("Starting the system. Press 'q' to quit.")
 
@@ -50,30 +52,40 @@ def main():
 
         # Step 2: If human detected, start face recognition
         elif human_detected and not face_recognized:
-            frame, name = face_recognizer.recognize_face(frame)
-            if name:
-                recognized_name = name
-                face_recognized = True
-                print(f"Face recognized: {recognized_name}")
-                status_text = f"Face recognized: {recognized_name}. Listening for wakeword..."
+            current_time = time.time()
+            
+            if face_detection_start_time is None:
+                face_detection_start_time = current_time
+                
+            # Ensure minimum detection time has passed
+            if current_time - face_detection_start_time >= min_detection_time:
+                status_text = "Face Recognition started.."
+                frame, name = face_recognizer.recognize_face(frame)
+                if name:
+                    recognized_name = name
+                    face_recognized = True
+                    print(f"Face recognized: {recognized_name}")
+                    status_text = f"Face recognized: {recognized_name}."
 
-                # Start wakeword detection in a separate thread
-                def wakeword_thread_func():
-                    nonlocal wakeword_status
-                    wakeword_status = wakeword_detector.detect_wakeword()
+                    # Start wakeword detection in a separate thread
+                    def wakeword_thread_func():
+                        nonlocal wakeword_status
+                        wakeword_status = wakeword_detector.detect_wakeword()
 
-                wakeword_thread = threading.Thread(target=wakeword_thread_func)
-                wakeword_thread.daemon = True
-                wakeword_thread.start()
+                    wakeword_thread = threading.Thread(target=wakeword_thread_func)
+                    wakeword_thread.daemon = True
+                    wakeword_thread.start()
+            else:
+                status_text = "Starting Face Recognition in progress..."
 
         # Step 3: After face recognition, check for wakeword
         elif face_recognized and wakeword_status is None:
-            status_text = f"Face recognized: {recognized_name}. Listening for wakeword 'hey lisa'..."
+            status_text = f"Face recognized: {recognized_name}. Say 'hey lisa' to continue..."
 
         # Step 4: Process wakeword detection results
         elif face_recognized and wakeword_status is not None and not process_completed:
             if wakeword_status == 1:
-                print("Wakeword detected!")
+                # print("Wakeword detected!")
                 status_text = "Wakeword detected! Process Completed."
                 print("Process Completed")
                 process_completed = True
@@ -85,6 +97,7 @@ def main():
                 print("No speech detected during wakeword detection")
                 status_text = "No speech detected. Press 'q' to exit."
                 process_completed = True
+                
 
         # Step 5: All steps completed
         elif process_completed:
@@ -96,7 +109,7 @@ def main():
         # Display status on the frame
         cv2.putText(frame, status_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        # Display the frame
+        # Display the frame (comment this to reduce graphics usage)
         cv2.imshow('Integrated System', frame)
 
         # Exit the loop if 'q' is pressed
