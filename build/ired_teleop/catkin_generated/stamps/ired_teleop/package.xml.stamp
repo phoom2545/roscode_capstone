@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ired_teleop</name>
+  <version>1.1.0</version>
+  <description>
+    This package is using for moving robot in linear, angular and holonomic.
+  </description>
+  <maintainer email="aimslabkmitl@gmail.com">AIMs Lab KMITL</maintainer>
+  <author email="t.thitipong@gmail.com">Thitipong T.</author>
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>geometry_msgs</depend>
+  <depend>rospy</depend>
+
+</package>

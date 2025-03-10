@@ -1,0 +1,8 @@
+prefix=/home/rai/ired_ws/install
+
+Name: human_detection_nav
+Description: Description of human_detection_nav
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

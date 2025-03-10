@@ -1,0 +1,2 @@
+human_detection_nav:ired_bringup:ired_movetogoal:ired_msgs:ired_navigation:ired_teleop:phoom_move:robot_interaction:rosserial/rosserial_arduino:rosserial/rosserial_client:rosserial/rosserial_msgs:rosserial/rosserial_python:rplidar_ros
+-DCATKIN_DEVEL_PREFIX=/home/rai/ired_ws/devel -DCMAKE_INSTALL_PREFIX=/home/rai/ired_ws/install -G Unix Makefiles

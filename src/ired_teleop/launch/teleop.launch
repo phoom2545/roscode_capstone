@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="topic" default="/cmd_vel"/>
+    <arg name="node_name" default="ired_teleop_node"/>
+
+    <node name="$(arg node_name)" pkg="ired_teleop" type="teleop.py"  output="screen" respawn="false">
+        <param name="topic" value="$(arg topic)"/>
+    </node>
+
+</launch>

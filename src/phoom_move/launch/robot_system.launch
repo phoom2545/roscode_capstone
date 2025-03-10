@@ -1,0 +1,7 @@
+<launch>
+    <!-- Launch movetogoal node -->
+    <node name="movetogoal_node" pkg="ired_movetogoal" type="movetogoal.py" output="screen"/>
+
+    <!-- Launch the main controller -->
+    <node name="robot_controller" pkg="phoom_move" type="main_ros.py" output="screen"/>
+</launch>

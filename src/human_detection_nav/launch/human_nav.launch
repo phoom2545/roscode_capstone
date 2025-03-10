@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="human_detection_nav" 
+          type="run_with_conda.sh" 
+          name="move_with_human_detection" 
+          output="screen">
+    </node>
+</launch>
