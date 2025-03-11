@@ -13,29 +13,29 @@ import tty
 import termios
 import cv2
 from ultralytics import YOLO
-from face_recognizer import FaceRecognizer  # Add this import
 
 class HumanDetector:
     def __init__(self):
+
         # Initialize necessary variables
         self.model = YOLO('yolov5su.pt')
         self.human_detected = False
         self.detection_thread = None
         self.stop_detection = False
         self.cap = None
-        self.face_recognizer = FaceRecognizer()  # Initialize face recognizer
 
-
+    # Start the human detection on thread (parallely)
     def start_detection(self):
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             print("Error: Could not open webcam.")
             return
 
-        self.detection_thread = threading.Thread(target=self.detection_loop)
+        self.detection_thread = threading.Thread(target=self.detection_loop)  # Create a thread for human detection (use detection_loop function)
         self.detection_thread.daemon = True
         self.detection_thread.start()
 
+    # Use the model to predict human and draw bounding box (class 0 is for human detection)
     def detection_loop(self):
         while not self.stop_detection and not rospy.is_shutdown():
             ret, frame = self.cap.read()
@@ -45,8 +45,8 @@ class HumanDetector:
             frame = cv2.resize(frame, (640, 480))
             results = self.model.predict(frame,
                                       conf=0.5,
-                                      verbose=False,
-                                      stream=False)
+                                      verbose=False,  # This disables the progress bar
+                                      stream=False)    # This makes it more efficient
 
             self.human_detected = False
             for result in results:
@@ -60,20 +60,11 @@ class HumanDetector:
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                         cv2.putText(frame, label, (x1, y1 - 10),
                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-                        
-            if self.human_detected == True:
-                # Perform face recognition when human is detected
-                frame, recognized_name = self.face_recognizer.recognize_face(frame)
-                if recognized_name:
-                    print(f"\nRecognized person: {recognized_name}")
-
-                    while True:
-                        print("Face Recognized!!!")
-                        time.sleep(5)
 
             cv2.imshow('Human Detection', frame)
             cv2.waitKey(1)
 
+    # Call this function to stop the human detection
     def stop(self):
         self.stop_detection = True
         if self.cap is not None:
@@ -115,12 +106,11 @@ class KeyboardController:
 
 
 class moveBaseAction():
-    def __init__(self, keyboard_controller, human_detector,face_recognizer):
+    def __init__(self, keyboard_controller, human_detector):
         self.move_base_action = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
         self.move_base_action.wait_for_server(rospy.Duration(5))
         self.keyboard_controller = keyboard_controller
         self.human_detector = human_detector
-        self.face_recognizer = face_recognizer
 
         # Clear costmap service
         rospy.wait_for_service('/move_base/clear_costmaps')
@@ -147,8 +137,6 @@ class moveBaseAction():
         self.move_base_action.send_goal(goal)
 
         rate = rospy.Rate(10)
-        face_detection_start_time = None
-
 
         while not rospy.is_shutdown():
             if self.keyboard_controller.should_stop:
@@ -159,13 +147,8 @@ class moveBaseAction():
             if self.human_detector.human_detected:
                 print("Human detected! Stopping robot...")
                 self.move_base_action.cancel_goal()
-
-                # Wait until human is no longer detected
                 while self.human_detector.human_detected and not rospy.is_shutdown():
-                    rate.sleep() # sleep for 0.1 seconds while in the loop
-
-
-                # Continue moving after the human is no longer detected
+                    rate.sleep()
                 print("No humans detected. Resuming movement...")
                 self.move_base_action.send_goal(goal)
 
@@ -208,11 +191,6 @@ def main():
     # Initialize controllers
     keyboard_controller = KeyboardController()
     human_detector = HumanDetector()
-    face_recognizer = FaceRecognizer() # initialize FaceRecognizer
-
-    
-
-
 
     # Start the human detection
     human_detector.start_detection()
@@ -222,7 +200,7 @@ def main():
     keyboard_thread.daemon = True
     keyboard_thread.start()
 
-    mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
+    mba = moveBaseAction(keyboard_controller, human_detector) #### WHAT IS MOVEBASEACTION
 
     # waypoints = [
     #     (1.356, 0.957, 4.712),
