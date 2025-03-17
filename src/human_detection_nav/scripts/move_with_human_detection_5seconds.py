@@ -67,29 +67,56 @@ class HumanDetector:
 
                 if recognized_name:
                     print(f"\nRecognized person: {recognized_name}")
-                    print("Face Recognized! Press 'o' to interact...")
+                    print("Face Recognized! Starting 5-second timer for 'o' button press...")
 
-                    # Brief check for 'o' button press
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('o'):
-                        print("\nButton 'o' pressed! Entering interaction mode...")
-                        # Add your interaction mode code here
-                        # For example, you might want to set a flag or trigger a specific behavior
+                    # Record the start time after face recognition
+                    start_time = time.time()
+                    button_pressed = False
 
-                        # Wait for another 'o' press to continue
-                        print("Press 'o' again to continue normal operation...")
-                        while True:
-                            ret, temp_frame = self.cap.read()
-                            if ret:
-                                temp_frame = cv2.resize(temp_frame, (640, 480))
-                                cv2.putText(temp_frame, f"'{recognized_name}' is recognized. Press 'o' to exit", (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                                cv2.imshow('Human Detection', temp_frame)
+                    # Continue updating frames while waiting for 'o' button press
+                    while time.time() - start_time < 5 and not button_pressed:
+                        # Get new frame
+                        ret, frame = self.cap.read()
+                        if not ret:
+                            continue
 
-                                key = cv2.waitKey(1) & 0xFF
-                                if key == ord('o'):
-                                    print("\nContinuing normal operation...")
-                                    break
+                        frame = cv2.resize(frame, (640, 480))
+
+                        # Run detection on new frame
+                        results = self.model.predict(frame,
+                                                conf=0.5,
+                                                verbose=False,
+                                                stream=False)
+
+                        # Draw detection boxes
+                        for result in results:
+                            for box in result.boxes:
+                                cls = int(box.cls[0])
+                                if cls == 0:  # Class 0 is "person"
+                                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                    conf = box.conf[0]
+                                    label = f"Person {conf:.2f}"
+                                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                                    cv2.putText(frame, label, (x1, y1 - 10),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+                        # Perform face recognition on new frame
+                        frame, current_recognized_name = self.face_recognizer.recognize_face(frame)
+                        if current_recognized_name:
+                            print(f"\rWaiting for 'o' button press... {5 - (time.time() - start_time):.1f} seconds left", end='')
+
+                            # Check for 'o' button press
+                            key = cv2.waitKey(1) & 0xFF
+                            if key == ord('o'):
+                                print("\n'o' button pressed for", current_recognized_name)
+                                button_pressed = True
+                                # Add your action here when 'o' is pressed
+                                break
+
+                        cv2.imshow('Human Detection', frame)
+
+                    if not button_pressed:
+                        print("\nNo 'o' button press detected within 5 seconds")
 
                 cv2.imshow('Human Detection', frame)
                 cv2.waitKey(1)

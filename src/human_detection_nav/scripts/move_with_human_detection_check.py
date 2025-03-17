@@ -64,39 +64,17 @@ class HumanDetector:
             if self.human_detected == True:
                 # Perform face recognition when human is detected
                 frame, recognized_name = self.face_recognizer.recognize_face(frame)
-
                 if recognized_name:
                     print(f"\nRecognized person: {recognized_name}")
-                    print("Face Recognized! Press 'o' to interact...")
 
-                    # Brief check for 'o' button press
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('o'):
-                        print("\nButton 'o' pressed! Entering interaction mode...")
-                        # Add your interaction mode code here
-                        # For example, you might want to set a flag or trigger a specific behavior
+                    print("Face Recognized!!!")
 
-                        # Wait for another 'o' press to continue
-                        print("Press 'o' again to continue normal operation...")
-                        while True:
-                            ret, temp_frame = self.cap.read()
-                            if ret:
-                                temp_frame = cv2.resize(temp_frame, (640, 480))
-                                cv2.putText(temp_frame, f"'{recognized_name}' is recognized. Press 'o' to exit", (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                                cv2.imshow('Human Detection', temp_frame)
+                    # while True:
+                    #     print("Face Recognized!!!")
+                    #     time.sleep(5)
 
-                                key = cv2.waitKey(1) & 0xFF
-                                if key == ord('o'):
-                                    print("\nContinuing normal operation...")
-                                    break
-
-                cv2.imshow('Human Detection', frame)
-                cv2.waitKey(1)
-
-            else:
-                cv2.imshow('Human Detection', frame)
-                cv2.waitKey(1)
+            cv2.imshow('Human Detection', frame)
+            cv2.waitKey(1)
 
     def stop(self):
         self.stop_detection = True
