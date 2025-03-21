@@ -12,6 +12,7 @@ import sys
 import tty
 import termios
 import cv2
+import requests
 from ultralytics import YOLO
 from face_recognizer import FaceRecognizer  # Add this import
 
@@ -24,7 +25,7 @@ class HumanDetector:
         self.stop_detection = False
         self.cap = None
         self.face_recognizer = FaceRecognizer()  # Initialize face recognizer
-
+        self.api_url = "http://172.16.0.200:5000"  # Flask API URL
 
     def start_detection(self):
         self.cap = cv2.VideoCapture(0)
@@ -36,6 +37,18 @@ class HumanDetector:
         self.detection_thread.daemon = True
         self.detection_thread.start()
 
+    def check_button_state(self, button_type):
+        """
+        Check the state of a button from the Flask API.
+        """
+        try:
+            response = requests.get(f"{self.api_url}/button")
+            button_states = response.json()
+            return button_states.get(button_type, False)
+        except requests.exceptions.RequestException as e:
+            print(f"Error checking button state: {e}")
+            return False
+
     def detection_loop(self):
         while not self.stop_detection and not rospy.is_shutdown():
             ret, frame = self.cap.read()
@@ -43,10 +56,7 @@ class HumanDetector:
                 continue
 
             frame = cv2.resize(frame, (640, 480))
-            results = self.model.predict(frame,
-                                      conf=0.5,
-                                      verbose=False,
-                                      stream=False)
+            results = self.model.predict(frame, conf=0.5, verbose=False, stream=False)
 
             self.human_detected = False
             for result in results:
@@ -59,44 +69,38 @@ class HumanDetector:
                         label = f"Person {conf:.2f}"
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                         cv2.putText(frame, label, (x1, y1 - 10),
-                                  cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-                        
-            if self.human_detected == True:
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+            if self.human_detected:
                 # Perform face recognition when human is detected
                 frame, recognized_name = self.face_recognizer.recognize_face(frame)
 
                 if recognized_name:
                     print(f"\nRecognized person: {recognized_name}")
-                    print("Face Recognized! Press 'o' to interact...")
+                    print("Face Recognized! Waiting for button press...")
 
-                    # Brief check for 'o' button press
-                    key = cv2.waitKey(1) & 0xFF
-                    if key == ord('o'):
-                        print("\nButton 'o' pressed! Entering interaction mode...")
-                        # Add your interaction mode code here
-                        # For example, you might want to set a flag or trigger a specific behavior
+                    # Wait for the "interactive" button to be pressed
+                    while not self.check_button_state("interactive"):
+                        cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button", (10, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        cv2.imshow('Human Detection', frame)
+                        cv2.waitKey(1)
 
-                        # Wait for another 'o' press to continue
-                        print("Press 'o' again to continue normal operation...")
-                        while True:
-                            ret, temp_frame = self.cap.read()
-                            if ret:
-                                temp_frame = cv2.resize(temp_frame, (640, 480))
-                                cv2.putText(temp_frame, f"'{recognized_name}' is recognized. Press 'o' to exit", (10, 30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                                cv2.imshow('Human Detection', temp_frame)
+                    print("\nInteractive mode activated!")
+                    # Add your interaction mode code here
 
-                                key = cv2.waitKey(1) & 0xFF
-                                if key == ord('o'):
-                                    print("\nContinuing normal operation...")
-                                    break
+                    # Wait for the "interactive" button to be pressed again to exit
+                    print("Press 'Interactive' button again to exit...")
+                    while self.check_button_state("interactive"):
+                        cv2.putText(frame, f"'{recognized_name}' is recognized. Interactive mode activated", (10, 30),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        cv2.imshow('Human Detection', frame)
+                        cv2.waitKey(1)
 
-                cv2.imshow('Human Detection', frame)
-                cv2.waitKey(1)
+                    print("\nExiting interactive mode...")
 
-            else:
-                cv2.imshow('Human Detection', frame)
-                cv2.waitKey(1)
+            cv2.imshow('Human Detection', frame)
+            cv2.waitKey(1)
 
     def stop(self):
         self.stop_detection = True
