@@ -92,7 +92,7 @@ class HumanDetector:
                     # Wait for the "interactive" button to be pressed again to exit
                     print("Press 'Interactive' button again to exit...")
                     while self.check_button_state("interactive"):
-                        cv2.putText(frame, f"'{recognized_name}' is recognized. Interactive mode activated", (10, 30),
+                        cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button to exit", (10, 30),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         cv2.imshow('Human Detection', frame)
                         cv2.waitKey(1)
@@ -251,18 +251,28 @@ def main():
 
     mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
 
-    waypoints = [
-        (1.356, 0.957, 4.712),
-        (1.852, -0.773, 0),
-        (-0.040, -2.634, 3.14),
-        (-0.041, -4.957, 1.57)
-    ]
+    # waypoints = [
+    #     (1.356, 0.957, 4.712),
+    #     (1.852, -0.773, 0),
+    #     (-0.040, -2.634, 3.14),
+    #     (-0.041, -4.957, 1.57)
+    # ]
 
     # waypoints = [
     #     (0.307, -1.146, 1.529),
     #     (0.269, -0.557, 3.073),
     #     (0.029, -0.250, 0.018),
     # ]
+
+
+    # for robotlab
+    waypoints = [
+        (2.391, 0.243, 1.596),
+        (3.431, 2.005, -1.520),
+        (1.675, -0.156, 3.112),
+        (-0.061,0.119,0.060)
+    ]
+
 
     try:
         while not rospy.is_shutdown() and not keyboard_controller.should_stop:
