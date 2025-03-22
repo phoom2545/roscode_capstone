@@ -99,14 +99,12 @@ class HumanDetector:
 
                     print("\nExiting interactive mode...")
 
+                    # Flush the frame buffer by skipping a few frames
+                    for _ in range(5):  # Skip 5 frames
+                        self.cap.read()
+
             cv2.imshow('Human Detection', frame)
             cv2.waitKey(1)
-
-    def stop(self):
-        self.stop_detection = True
-        if self.cap is not None:
-            self.cap.release()
-        cv2.destroyAllWindows()
 
 # Keyboard controller to listen to keyboard inputs
 class KeyboardController:
