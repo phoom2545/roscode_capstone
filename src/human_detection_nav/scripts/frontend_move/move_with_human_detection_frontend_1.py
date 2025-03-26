@@ -48,17 +48,6 @@ class HumanDetector:
         except requests.exceptions.RequestException as e:
             print(f"Error checking button state: {e}")
             return False
-        
-    def notify_face_recognized(self):
-        """
-        Notify the Flask API that a face has been recognized.
-        """
-        try:
-            response = requests.post(f"{self.api_url}/face_recognized")
-            if response.status_code == 200:
-                print("Face recognition status updated on the server.")
-        except requests.exceptions.RequestException as e:
-            print(f"Error notifying face recognition: {e}")
 
     def detection_loop(self):
         while not self.stop_detection and not rospy.is_shutdown():
@@ -92,7 +81,6 @@ class HumanDetector:
 
                     # Wait for the "interactive" button to be pressed
                     while not self.check_button_state("interactive"):
-                        self.notify_face_recognized()
                         cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button", (10, 30),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         cv2.imshow('Human Detection', frame)
@@ -261,12 +249,12 @@ def main():
 
     mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
 
-    waypoints = [
-        (1.356, 0.957, 4.712),
-        (1.852, -0.773, 0),
-        (-0.040, -2.634, 3.14),
-        (-0.041, -4.957, 1.57)
-    ]
+    # waypoints = [
+    #     (1.356, 0.957, 4.712),
+    #     (1.852, -0.773, 0),
+    #     (-0.040, -2.634, 3.14),
+    #     (-0.041, -4.957, 1.57)
+    # ]
 
     # waypoints = [
     #     (0.307, -1.146, 1.529),
@@ -275,13 +263,13 @@ def main():
     # ]
 
 
-    # # for robotlab
-    # waypoints = [
-    #     (2.391, 0.243, 1.596),
-    #     (3.431, 2.005, -1.520),
-    #     (1.675, -0.156, 3.112),
-    #     (-0.061,0.119,0.060)
-    # ]
+    # for robotlab
+    waypoints = [
+        (2.391, 0.243, 1.596),
+        (3.431, 2.005, -1.520),
+        (1.675, -0.156, 3.112),
+        (-0.061,0.119,0.060)
+    ]
 
 
     try:
