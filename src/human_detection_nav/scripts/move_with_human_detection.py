@@ -229,6 +229,13 @@ class moveBaseAction():
         return self.moveToGoal(target_point)
 
     def moveToGoal(self, goal):
+
+        global navigate_waypoint_flag
+        # CHANGED: Added tracking of initial flag value to detect changes
+        initial_flag_value = navigate_waypoint_flag
+        # CHANGED: Added descriptive waypoint type for better logging
+        initial_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
+
         print(f"\nMoving to x:{goal.target_pose.pose.position.x:.2f}, y:{goal.target_pose.pose.position.y:.2f}, orientation:{goal.target_pose.pose.orientation.z:.2f}")
         self.move_base_action.send_goal(goal)
 
@@ -236,6 +243,14 @@ class moveBaseAction():
 
 
         while not rospy.is_shutdown():
+
+            current_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
+
+            if current_waypoint_type != initial_waypoint_type:
+                print(f"Navigation mode changed from {initial_waypoint_type} to {current_waypoint_type}! Canceling current goal.")
+                self.move_base_action.cancel_goal()
+                return False
+            
             if self.keyboard_controller.should_stop:
                 self.move_base_action.cancel_goal()
                 return False
@@ -248,7 +263,12 @@ class moveBaseAction():
                 # Wait until human is no longer detected
                 while self.human_detector.human_detected and not rospy.is_shutdown():
                     rate.sleep() # sleep for 0.1 seconds while in the loop
+                    current_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
 
+                    if current_waypoint_type != initial_waypoint_type:
+                        print(f"Navigation mode changed during human detection! Canceling current goal.")
+                        return False
+                    rate.sleep()
 
                 # Continue moving after the human is no longer detected
                 print("No humans detected. Resuming movement...")
@@ -258,7 +278,14 @@ class moveBaseAction():
                 self.move_base_action.cancel_goal()
                 print("Robot paused. Press 't' to resume...")
                 while self.keyboard_controller.paused and not rospy.is_shutdown():
+                    # CHANGED: Added check for navigation mode changes during pause
+                    current_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
+                    if current_waypoint_type != initial_waypoint_type:
+                        print(f"Navigation mode changed during pause! Canceling current goal.")
+                        return False
                     rate.sleep()
+
+
                 if not self.keyboard_controller.paused:
                     print("Resuming movement...")
                     self.move_base_action.send_goal(goal)
@@ -305,7 +332,7 @@ def main():
 
     mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
 
-    # global navigate_waypoint_flag   
+    global navigate_waypoint_flag   
 
     # waypoints at Home
     default_waypoints = [
@@ -349,9 +376,7 @@ def main():
 
     try:
         while not rospy.is_shutdown() and not keyboard_controller.should_stop:
-            global navigate_waypoint_flag   
-
-
+             
             if navigate_waypoint_flag == 0:
                 waypoints = default_waypoints
                 print("Default waypoints selected!")
