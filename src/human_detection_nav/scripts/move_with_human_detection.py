@@ -28,7 +28,7 @@ class HumanDetector:
         self.api_url = "http://172.16.0.200:5000"  # Flask API URL
 
     def start_detection(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(6)
         if not self.cap.isOpened():
             print("Error: Could not open webcam.")
             return
@@ -261,11 +261,18 @@ def main():
 
     mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
 
+    # waypoints = [
+    #     (1.356, 0.957, 4.712),
+    #     (1.852, -0.773, 0),
+    #     (-0.040, -2.634, 3.14),
+    #     (-0.041, -4.957, 1.57)
+    # ]
+
     waypoints = [
-        (1.356, 0.957, 4.712),
-        (1.852, -0.773, 0),
-        (-0.040, -2.634, 3.14),
-        (-0.041, -4.957, 1.57)
+    (1.498, -2.150, 1.495),
+    (1.369, -0.537, 0),
+    (1.692, 1.092, 0),
+    (0.032, -0.011, -1.555)
     ]
 
     # waypoints = [

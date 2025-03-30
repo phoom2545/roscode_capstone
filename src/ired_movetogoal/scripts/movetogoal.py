@@ -158,11 +158,18 @@ def main():
     mba = moveBaseAction(keyboard_controller) # Let moveBaseAction class access to keyboard_controller class
 
     # List of waypoints
+    # waypoints = [
+    #     (1.356, 0.957, 4.712),
+    #     (1.852, -0.773, 0),
+    #     (-0.040, -2.634, 3.14),
+    #     (-0.041, -4.957, 1.57)
+    # ]
+
     waypoints = [
-        (1.356, 0.957, 4.712),
-        (1.852, -0.773, 0),
-        (-0.040, -2.634, 3.14),
-        (-0.041, -4.957, 1.57)
+        (1.498, -2.150, 1.495),
+        (1.369, -0.537, 0),
+        (1.692, 1.092, 0),
+        (0.032, -0.011, -1.555)
     ]
 
     # Main loop of code where it use the input waypoints and send to associated class and functions

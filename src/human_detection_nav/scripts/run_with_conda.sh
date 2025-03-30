@@ -2,7 +2,7 @@
 
 # Adjust these paths according to your setup
 CONDA_PATH=~/miniconda3  # or ~/miniconda3
-CONDA_ENV=herobot2     # your conda environment name
+CONDA_ENV=herobot3    # your conda environment name
 
 # Source conda
 source $CONDA_PATH/etc/profile.d/conda.sh
