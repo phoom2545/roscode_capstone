@@ -15,6 +15,7 @@ import cv2
 import requests
 from ultralytics import YOLO
 from face_recognizer import FaceRecognizer  # Add this import
+from demo6 import SpeechAssistant
 
 class HumanDetector:
     def __init__(self):
@@ -25,10 +26,11 @@ class HumanDetector:
         self.stop_detection = False
         self.cap = None
         self.face_recognizer = FaceRecognizer()  # Initialize face recognizer
+        self.speech_assistant = SpeechAssistant()  # Initialize speech assistant
         self.api_url = "http://172.16.0.200:5000"  # Flask API URL
 
     def start_detection(self):
-        self.cap = cv2.VideoCapture(6)
+        self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             print("Error: Could not open webcam.")
             return
@@ -97,17 +99,24 @@ class HumanDetector:
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         cv2.imshow('Human Detection', frame)
                         cv2.waitKey(1)
-
                     print("\nInteractive mode activated!")
-                    # Add your interaction mode code here
+
+                    
 
                     # Wait for the "interactive" button to be pressed again to exit
                     print("Press 'Interactive' button again to exit...")
+
                     while self.check_button_state("interactive"):
                         cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button to exit", (10, 30),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         cv2.imshow('Human Detection', frame)
                         cv2.waitKey(1)
+
+
+                        # Start Speech Assistant (interactive mode)
+                        self.speech_assistant.run()
+                        print("THIS MEANS IT IS ACTUALLY COMING OUT-----------------")
+
 
                     print("\nExiting interactive mode...")
 
@@ -261,19 +270,22 @@ def main():
 
     mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
 
-    # waypoints = [
-    #     (1.356, 0.957, 4.712),
-    #     (1.852, -0.773, 0),
-    #     (-0.040, -2.634, 3.14),
-    #     (-0.041, -4.957, 1.57)
-    # ]
-
+    # waypoints at Home
     waypoints = [
-    (1.498, -2.150, 1.495),
-    (1.369, -0.537, 0),
-    (1.692, 1.092, 0),
-    (0.032, -0.011, -1.555)
+        (1.356, 0.957, 4.712),
+        (1.852, -0.773, 0),
+        (-0.040, -2.634, 3.14),
+        (-0.041, -4.957, 1.57)
     ]
+
+
+    # waypoints at lab (two)
+    # waypoints = [
+    # (1.498, -2.150, 1.495),
+    # (1.369, -0.537, 0),
+    # (1.692, 1.092, 0),
+    # (0.032, -0.011, -1.555)
+    # ]
 
     # waypoints = [
     #     (0.307, -1.146, 1.529),
@@ -301,7 +313,7 @@ def main():
                 success = mba.moveToPoint(x, y, theta)
 
                 if not success:
-                    print("Failed to reach waypoint (Front Lab), moving to next...")
+                    print("Failed to reach waypoint, moving to next...")
                 rospy.sleep(1)
 
     # Handle the exception
