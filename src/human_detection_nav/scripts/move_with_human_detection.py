@@ -15,7 +15,7 @@ import cv2
 import requests
 from ultralytics import YOLO
 from face_recognizer import FaceRecognizer  # Add this import
-from demo6 import SpeechAssistant
+from demo7 import SpeechAssistant
 
 class HumanDetector:
     def __init__(self):
@@ -115,10 +115,8 @@ class HumanDetector:
 
                         # Start Speech Assistant (interactive mode)
                         self.speech_assistant.run()
-                        print("THIS MEANS IT IS ACTUALLY COMING OUT-----------------")
+                        print("Exiting interactive mode...")
 
-
-                    print("\nExiting interactive mode...")
 
                     # Flush the frame buffer by skipping a few frames
                     for _ in range(5):  # Skip 5 frames
