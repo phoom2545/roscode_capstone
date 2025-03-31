@@ -127,7 +127,7 @@ class SpeechAssistant:
             else:
                 print(f"Server returned status code: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            print(f"Error sending user input: {e}")
+            print(f"Error sendind user input: {e}")
 
     def llm_answer(self,llm_response):
         # Send what user spoke to the server.
@@ -144,7 +144,6 @@ class SpeechAssistant:
 
 
 
-
     def run(self, timeout=None):
         """
         Main loop for the speech assistant.
@@ -156,11 +155,11 @@ class SpeechAssistant:
 
         try:
             while not self.should_stop:
-                # Check if the "interactive" button is pressed to stop the assistant
-                if not self.check_button_state("interactive"):
-                    print("Interactive button not pressed. Stopping Speech Assistant...")
-                    self.should_stop = True
-                    break
+            #     # Check if the "interactive" button is pressed to stop the assistant
+            #     if not self.check_button_state("interactive"):
+            #         print("Interactive button not pressed. Stopping Speech Assistant...")
+            #         self.should_stop = True
+            #         break
 
                 user_query = self.transcribe_audio()
                 if user_query:

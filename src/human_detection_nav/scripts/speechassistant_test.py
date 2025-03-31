@@ -1,4 +1,4 @@
-from demo6 import SpeechAssistant
+from demo7_fortesting import SpeechAssistant
 
 def main():
     assistant = SpeechAssistant()
