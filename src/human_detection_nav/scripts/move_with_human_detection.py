@@ -18,6 +18,7 @@ from face_recognizer import FaceRecognizer  # Add this import
 from demo7 import SpeechAssistant
 
 navigate_waypoint_flag = 0
+api_url_navigation_state = "http://172.16.0.200:5000/navigation_status"
 
 class HumanDetector:
     def __init__(self):
@@ -335,29 +336,29 @@ def main():
     global navigate_waypoint_flag   
 
     # waypoints at Home
-    # default_waypoints = [
-    #     (1.356, 0.957, 4.712),
-    #     (1.852, -0.773, 0),
-    #     (-0.040, -2.634, 3.14),
-    #     (-0.041, -4.957, 1.57)
-    # ]
-    # navigate_waypoints = [
-    #     (0.653, -0.725, 0.034),
-    #     (1.732, 0.627, -1.553),
-    #     (-0.382, -1.936, -0.020)
-    # ]
-
-    # inside lab waypoints
     default_waypoints = [
-        (1.831, 1.137, -1.631),
-        (2.852, 0.206, 3.044),
-        (0.167, 0.044, 0.064)
+        (1.356, 0.957, 4.712),
+        (1.852, -0.773, 0),
+        (-0.040, -2.634, 3.14),
+        (-0.041, -4.957, 1.57)
     ]
     navigate_waypoints = [
         (0.653, -0.725, 0.034),
         (1.732, 0.627, -1.553),
         (-0.382, -1.936, -0.020)
     ]
+
+    # inside lab waypoints
+    # default_waypoints = [
+    #     (1.831, 1.137, -1.631),
+    #     (2.852, 0.206, 3.044),
+    #     (0.167, 0.044, 0.064)
+    # ]
+    # navigate_waypoints = [
+    #     (0.653, -0.725, 0.034),
+    #     (1.732, 0.627, -1.553),
+    #     (-0.382, -1.936, -0.020)
+    # ]
 
 
 
@@ -417,6 +418,17 @@ def main():
             # After completing all waypoints in navigation mode, reset to default
             if navigate_waypoint_flag == 1 and waypoints == navigate_waypoints:
                 print("Navigation completed. Returning to default waypoints.")
+
+                # Send the state that the navigation is completed
+                global api_url_navigation_state
+                try:
+                    response = requests.post(api_url_navigation_state)
+                    if response.status_code == 200:
+                        print("Navigation status updated on the server.")
+                except requests.exceptions.RequestException as e:
+                    print(f"Error notifying Navigation status to server: {e}")
+
+                # Reset the navigate_waypoint_flag to 0. Returns to default waypoints
                 navigate_waypoint_flag = 0
 
     # Handle the exception
