@@ -32,7 +32,7 @@ class HumanDetector:
         self.api_url = "http://172.16.0.200:5000"  # Flask API URL
 
     def start_detection(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(6)
         if not self.cap.isOpened():
             print("Error: Could not open webcam.")
             return
@@ -335,11 +335,23 @@ def main():
     global navigate_waypoint_flag   
 
     # waypoints at Home
+    # default_waypoints = [
+    #     (1.356, 0.957, 4.712),
+    #     (1.852, -0.773, 0),
+    #     (-0.040, -2.634, 3.14),
+    #     (-0.041, -4.957, 1.57)
+    # ]
+    # navigate_waypoints = [
+    #     (0.653, -0.725, 0.034),
+    #     (1.732, 0.627, -1.553),
+    #     (-0.382, -1.936, -0.020)
+    # ]
+
+    # inside lab waypoints
     default_waypoints = [
-        (1.356, 0.957, 4.712),
-        (1.852, -0.773, 0),
-        (-0.040, -2.634, 3.14),
-        (-0.041, -4.957, 1.57)
+        (1.831, 1.137, -1.631),
+        (2.852, 0.206, 3.044),
+        (0.167, 0.044, 0.064)
     ]
     navigate_waypoints = [
         (0.653, -0.725, 0.034),
