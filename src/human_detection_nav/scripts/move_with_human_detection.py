@@ -15,7 +15,7 @@ import cv2
 import requests
 from ultralytics import YOLO
 from face_recognizer import FaceRecognizer  # Add this import
-from demo7 import SpeechAssistant
+from interactive_code import SpeechAssistant
 
 navigate_waypoint_flag = 0
 api_url_navigation_state = "http://172.16.0.200:5000/navigation_status"
@@ -66,7 +66,6 @@ class HumanDetector:
             print(f"Error notifying face recognition: {e}")
 
     def detection_loop(self):
-
         global navigate_waypoint_flag
         
         while not self.stop_detection and not rospy.is_shutdown():
@@ -75,6 +74,15 @@ class HumanDetector:
                 continue
 
             frame = cv2.resize(frame, (640, 480))
+            
+            # CHANGE: Skip human detection if in navigation mode
+            if navigate_waypoint_flag == 1:
+                cv2.putText(frame, "Navigation Mode - Human Detection Disabled", (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.imshow('Human Detection', frame)
+                cv2.waitKey(1)
+                continue
+                
             results = self.model.predict(frame, conf=0.5, verbose=False, stream=False)
 
             self.human_detected = False
@@ -107,12 +115,9 @@ class HumanDetector:
                         cv2.imshow('Human Detection', frame)
                         cv2.waitKey(1)
 
-
-
                     # Check if the 'interactive' button is pressed
                     if self.check_button_state("interactive"):
                         
-
                         print("\nInteractive mode activated!")
                         
                         # Loop in the interactive mode until the 'interactive' state in the API is false
@@ -123,31 +128,16 @@ class HumanDetector:
                             cv2.imshow('Human Detection', frame)
                             cv2.waitKey(1)
 
-
                             # Start Speech Assistant (interactive mode)
                             self.speech_assistant.run()
                             print("Exiting interactive mode...")
-
 
                     # Check if the 'navigation' button is pressed
                     elif self.check_button_state("navigation"):
                         
                         navigate_waypoint_flag = 1
                         print("Change waypoint to 1")
-
                         print("Navigation mode activated")
-                        
-                        # Loop in the interactive mode until the 'interactive' state in the API is false
-                        # while self.check_button_state("navigation"):
-
-                            # cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'navigation' button to exit", (10, 30),
-                            #         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                            # cv2.imshow('Human Detection', frame)
-                            # cv2.waitKey(1)
-
-                            
-                            # print("Exiting navigation mode...")
-
 
                     # Flush the frame buffer by skipping a few frames
                     for _ in range(5):  # Skip 5 frames
@@ -230,7 +220,6 @@ class moveBaseAction():
         return self.moveToGoal(target_point)
 
     def moveToGoal(self, goal):
-
         global navigate_waypoint_flag
         # CHANGED: Added tracking of initial flag value to detect changes
         initial_flag_value = navigate_waypoint_flag
@@ -242,9 +231,7 @@ class moveBaseAction():
 
         rate = rospy.Rate(10)
 
-
         while not rospy.is_shutdown():
-
             current_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
 
             if current_waypoint_type != initial_waypoint_type:
@@ -256,8 +243,8 @@ class moveBaseAction():
                 self.move_base_action.cancel_goal()
                 return False
 
-            # Check for human detection
-            if self.human_detector.human_detected:
+            # CHANGE: Only check for human detection if NOT in navigation mode
+            if self.human_detector.human_detected and navigate_waypoint_flag == 0:
                 print("Human detected! Stopping robot...")
                 self.move_base_action.cancel_goal()
 
@@ -286,7 +273,6 @@ class moveBaseAction():
                         return False
                     rate.sleep()
 
-
                 if not self.keyboard_controller.paused:
                     print("Resuming movement...")
                     self.move_base_action.send_goal(goal)
@@ -312,7 +298,7 @@ class moveBaseAction():
         except rospy.ServiceException as e:
             print("Failed to clear costmap:", e)
 
-
+# MAIN CODE
 def main():
 
     # Init ROS node for move_to_goal
@@ -331,7 +317,7 @@ def main():
     keyboard_thread.daemon = True
     keyboard_thread.start()
 
-    mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) #### WHAT IS MOVEBASEACTION
+    mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) 
 
     global navigate_waypoint_flag   
 
