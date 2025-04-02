@@ -20,6 +20,9 @@ from interactive_code import SpeechAssistant
 navigate_waypoint_flag = 0
 api_url_navigation_state = "http://172.16.0.200:5000/navigation_status"
 
+import os
+import subprocess
+
 class HumanDetector:
     def __init__(self):
         # Initialize necessary variables
@@ -29,11 +32,14 @@ class HumanDetector:
         self.stop_detection = False
         self.cap = None
         self.face_recognizer = FaceRecognizer()  # Initialize face recognizer
-        self.speech_assistant = SpeechAssistant()  # Initialize speech assistant
         self.api_url = "http://172.16.0.200:5000"  # Flask API URL
+        self.output_dir = "GreetingAudio"
+        self.audio_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "GreetingAudio"
+        )
 
     def start_detection(self):
-        self.cap = cv2.VideoCapture(6)
+        self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             print("Error: Could not open webcam.")
             return
@@ -53,7 +59,7 @@ class HumanDetector:
         except requests.exceptions.RequestException as e:
             print(f"Error checking button state: {e}")
             return False
-        
+
     def notify_face_recognized(self):
         """
         Notify the Flask API that a face has been recognized.
@@ -65,16 +71,37 @@ class HumanDetector:
         except requests.exceptions.RequestException as e:
             print(f"Error notifying face recognition: {e}")
 
+    def play_audio(self, recognized_name):
+        """
+        Play the audio file corresponding to the recognized name.
+        """
+        # Construct the full path to the audio file
+        audio_file = os.path.join(self.audio_dir, f"{recognized_name}.wav")
+        if recognized_name == "unknown":
+            audio_file = os.path.join(self.audio_dir, "unknown.wav")
+
+        # Check if the audio file exists
+        if not os.path.exists(audio_file):
+            print(f"Audio file '{audio_file}' not found.")
+            return
+
+        try:
+            print(f"Playing audio: {audio_file}")
+            subprocess.run(["aplay", audio_file], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error playing audio file '{audio_file}': {e}")
+            
+
     def detection_loop(self):
         global navigate_waypoint_flag
-        
+
         while not self.stop_detection and not rospy.is_shutdown():
             ret, frame = self.cap.read()
             if not ret:
                 continue
 
             frame = cv2.resize(frame, (640, 480))
-            
+
             # Skip human detection if in navigation mode
             if navigate_waypoint_flag == 1:
                 cv2.putText(frame, "Navigation Mode - Human Detection Disabled", (10, 30),
@@ -82,7 +109,7 @@ class HumanDetector:
                 cv2.imshow('Human Detection', frame)
                 cv2.waitKey(1)
                 continue
-                
+
             results = self.model.predict(frame, conf=0.5, verbose=False, stream=False)
 
             self.human_detected = False
@@ -98,26 +125,25 @@ class HumanDetector:
                         cv2.putText(frame, label, (x1, y1 - 10),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-            # ISSUE: The problem might be here - the face recognition might be failing silently
             if self.human_detected:
-                # Add debug print to see if we're reaching this point
                 print("Human detected, attempting face recognition...")
-                
+
                 try:
                     # Perform face recognition when human is detected
                     frame, recognized_name = self.face_recognizer.recognize_face(frame)
-                    
-                    # Add debug print to see what's returned
+
                     print(f"Face recognition result: {recognized_name}")
 
                     if recognized_name:
+                        # Play greeting sound
+                        self.play_audio(recognized_name)
+
                         print(f"\nRecognized person: {recognized_name}")
                         print("Face Recognized! Waiting for button press...")
                         self.notify_face_recognized()
 
                         # Face Recognized screen when the face is recognized and wait for button to press
                         while not (self.check_button_state("interactive") or self.check_button_state("navigation")):
-                            
                             cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button", (10, 30),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                             cv2.imshow('Human Detection', frame)
@@ -125,24 +151,17 @@ class HumanDetector:
 
                         # Check if the 'interactive' button is pressed
                         if self.check_button_state("interactive"):
-                            
                             print("\nInteractive mode activated!")
-                            
+
                             # Loop in the interactive mode until the 'interactive' state in the API is false
                             while self.check_button_state("interactive"):
-
                                 cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button to exit", (10, 30),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                                 cv2.imshow('Human Detection', frame)
                                 cv2.waitKey(1)
 
-                                # Start Speech Assistant (interactive mode)
-                                self.speech_assistant.run()
-                                print("Exiting interactive mode...")
-
                         # Check if the 'navigation' button is pressed
                         elif self.check_button_state("navigation"):
-                            
                             navigate_waypoint_flag = 1
                             print("Change waypoint to 1")
                             print("Navigation mode activated")
@@ -151,15 +170,12 @@ class HumanDetector:
                         for _ in range(5):  # Skip 5 frames
                             self.cap.read()
                     else:
-                        # Add debug message when face is not recognized
                         print("Human detected but face not recognized yet. Still collecting buffer data...")
-                        # Add visual feedback about buffer status
                         if hasattr(self.face_recognizer, 'recognition_buffer'):
                             buffer_status = f"Buffer: {len(self.face_recognizer.recognition_buffer)}/{self.face_recognizer.buffer_size}"
-                            cv2.putText(frame, buffer_status, (10, 30), 
+                            cv2.putText(frame, buffer_status, (10, 30),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
                 except Exception as e:
-                    # Catch any exceptions in the face recognition process
                     print(f"Error during face recognition: {e}")
                     import traceback
                     traceback.print_exc()
@@ -167,7 +183,6 @@ class HumanDetector:
             cv2.imshow('Human Detection', frame)
             cv2.waitKey(1)
 
-        
     def stop(self):
         """
         Stop the detection thread and release resources
@@ -343,17 +358,31 @@ def main():
     global navigate_waypoint_flag   
 
     # waypoints at Home
+    # default_waypoints = [
+    #     (1.356, 0.957, 4.712),
+    #     (1.852, -0.773, 0),
+    #     (-0.040, -2.634, 3.14),
+    #     (-0.041, -4.957, 1.57)
+    # ]
+    # navigate_waypoints = [
+    #     (0.653, -0.725, 0.034),
+    #     (1.732, 0.627, -1.553),
+    #     (-0.382, -1.936, -0.020)
+    # ]
+
+    # waypoints at frontlab_rat
     default_waypoints = [
-        (1.356, 0.957, 4.712),
-        (1.852, -0.773, 0),
-        (-0.040, -2.634, 3.14),
-        (-0.041, -4.957, 1.57)
+        (0.623, 0.871, 1.630),
+        (0.741, 1.916, -3.117),
+        (-0.320, 2.098, -1.119)
     ]
     navigate_waypoints = [
         (0.653, -0.725, 0.034),
         (1.732, 0.627, -1.553),
         (-0.382, -1.936, -0.020)
     ]
+
+
 
     # inside lab waypoints
     # default_waypoints = [
