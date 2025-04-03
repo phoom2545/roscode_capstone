@@ -33,6 +33,7 @@ class HumanDetector:
         self.cap = None
         self.face_recognizer = FaceRecognizer()  # Initialize face recognizer
         self.api_url = "http://172.16.0.200:5000"  # Flask API URL
+        self.speech_assistant = SpeechAssistant()  # Initialize speech assistant
         self.output_dir = "GreetingAudio"
         self.audio_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "GreetingAudio"
@@ -144,6 +145,7 @@ class HumanDetector:
 
                         # Face Recognized screen when the face is recognized and wait for button to press
                         while not (self.check_button_state("interactive") or self.check_button_state("navigation")):
+                            print("STAY IN THE LOOP!!")
                             cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button", (10, 30),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                             cv2.imshow('Human Detection', frame)
@@ -160,8 +162,12 @@ class HumanDetector:
                                 cv2.imshow('Human Detection', frame)
                                 cv2.waitKey(1)
 
+                                # Start Speech Assistant (interactive mode)
+                                self.speech_assistant.run()
+                                print("Exiting interactive mode...")
+
                         # Check if the 'navigation' button is pressed
-                        elif self.check_button_state("navigation"):
+                        if self.check_button_state("navigation"):
                             navigate_waypoint_flag = 1
                             print("Change waypoint to 1")
                             print("Navigation mode activated")
@@ -227,8 +233,12 @@ class KeyboardController:
                 break
 
 
+# Add this import at the top of the file
+import os
+import subprocess
+
 class moveBaseAction():
-    def __init__(self, keyboard_controller, human_detector,face_recognizer):
+    def __init__(self, keyboard_controller, human_detector, face_recognizer):
         self.move_base_action = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
         self.move_base_action.wait_for_server(rospy.Duration(5))
         self.keyboard_controller = keyboard_controller
@@ -239,6 +249,25 @@ class moveBaseAction():
         rospy.wait_for_service('/move_base/clear_costmaps')
         self.clear_costmap_service = rospy.ServiceProxy('/move_base/clear_costmaps', Empty)
 
+        # Directory for navigation audio files
+        self.navigation_audio_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "NavigationAudio"
+        )
+
+    def play_navigation_audio(self, audio_name):
+        """
+        Play the specified audio file from the NavigationAudio folder.
+        """
+        audio_file = os.path.join(self.navigation_audio_dir, audio_name)
+        if not os.path.exists(audio_file):
+            print(f"Audio file '{audio_file}' not found.")
+            return
+
+        try:
+            print(f"Playing audio: {audio_file}")
+            subprocess.run(["aplay", audio_file], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error playing audio file '{audio_file}': {e}")
 
     def createGoal(self, x, y, theta):
         goal = MoveBaseGoal()
@@ -251,15 +280,25 @@ class moveBaseAction():
         )
         return goal
 
-    def moveToPoint(self, x, y, theta):
+    def moveToPoint(self, x, y, theta, waypoint_index):
         target_point = self.createGoal(x, y, theta)
+
+        # Play specific audio based on the waypoint index only if in navigation mode
+        if navigate_waypoint_flag == 1:
+            print("Start Speaking Navigation!!")
+            if waypoint_index == 0:
+                self.play_navigation_audio("navi.wav")  # Play before starting the first coordinate
+                rospy.sleep(1)  # Add a small delay to ensure the audio finishes
+            elif waypoint_index == 1:
+                self.play_navigation_audio("3Dlab.wav")  # Play for the first coordinate
+            elif waypoint_index == 2:
+                self.play_navigation_audio("Induslab.wav")  # Play for the second coordinate
+                
         return self.moveToGoal(target_point)
 
     def moveToGoal(self, goal):
         global navigate_waypoint_flag
-        # CHANGED: Added tracking of initial flag value to detect changes
         initial_flag_value = navigate_waypoint_flag
-        # CHANGED: Added descriptive waypoint type for better logging
         initial_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
 
         print(f"\nMoving to x:{goal.target_pose.pose.position.x:.2f}, y:{goal.target_pose.pose.position.y:.2f}, orientation:{goal.target_pose.pose.orientation.z:.2f}")
@@ -274,19 +313,17 @@ class moveBaseAction():
                 print(f"Navigation mode changed from {initial_waypoint_type} to {current_waypoint_type}! Canceling current goal.")
                 self.move_base_action.cancel_goal()
                 return False
-            
+
             if self.keyboard_controller.should_stop:
                 self.move_base_action.cancel_goal()
                 return False
 
-            # CHANGE: Only check for human detection if NOT in navigation mode
             if self.human_detector.human_detected and navigate_waypoint_flag == 0:
                 print("Human detected! Stopping robot...")
                 self.move_base_action.cancel_goal()
 
-                # Wait until human is no longer detected
                 while self.human_detector.human_detected and not rospy.is_shutdown():
-                    rate.sleep() # sleep for 0.1 seconds while in the loop
+                    rate.sleep()
                     current_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
 
                     if current_waypoint_type != initial_waypoint_type:
@@ -294,7 +331,6 @@ class moveBaseAction():
                         return False
                     rate.sleep()
 
-                # Continue moving after the human is no longer detected
                 print("No humans detected. Resuming movement...")
                 self.move_base_action.send_goal(goal)
 
@@ -302,7 +338,6 @@ class moveBaseAction():
                 self.move_base_action.cancel_goal()
                 print("Robot paused. Press 't' to resume...")
                 while self.keyboard_controller.paused and not rospy.is_shutdown():
-                    # CHANGED: Added check for navigation mode changes during pause
                     current_waypoint_type = "default" if navigate_waypoint_flag == 0 else "navigation"
                     if current_waypoint_type != initial_waypoint_type:
                         print(f"Navigation mode changed during pause! Canceling current goal.")
@@ -316,7 +351,6 @@ class moveBaseAction():
             state = self.move_base_action.get_state()
             if state == GoalStatus.SUCCEEDED:
                 print("Goal reached successfully!")
-                # Call the function to clear the costmap
                 self.clear_costmap()
                 return True
             elif state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.PREEMPTED]:
@@ -325,10 +359,8 @@ class moveBaseAction():
 
             rate.sleep()
 
-    # Function to clear the costmap
     def clear_costmap(self):
         try:
-            # Call the service to clear the costmap
             self.clear_costmap_service()
             print("Costmap Cleared!")
         except rospy.ServiceException as e:
@@ -336,96 +368,47 @@ class moveBaseAction():
 
 # MAIN CODE
 def main():
-
-    # Init ROS node for move_to_goal
     rospy.init_node('move_to_goal', anonymous=True)
 
-    # Initialize controllers
     keyboard_controller = KeyboardController()
     human_detector = HumanDetector()
-    face_recognizer = FaceRecognizer() # initialize FaceRecognizer
+    face_recognizer = FaceRecognizer()
 
-    # Start the human detection
     human_detector.start_detection()
 
-    # Start keyboard listener parallelly using thread
     keyboard_thread = threading.Thread(target=keyboard_controller.keyboard_listener)
     keyboard_thread.daemon = True
     keyboard_thread.start()
 
-    mba = moveBaseAction(keyboard_controller, human_detector,face_recognizer) 
+    mba = moveBaseAction(keyboard_controller, human_detector, face_recognizer)
 
-    global navigate_waypoint_flag   
+    global navigate_waypoint_flag
 
-    # waypoints at Home
     # default_waypoints = [
-    #     (1.356, 0.957, 4.712),
-    #     (1.852, -0.773, 0),
-    #     (-0.040, -2.634, 3.14),
-    #     (-0.041, -4.957, 1.57)
+    #     (0.623, 0.871, 1.630),
+    #     (0.741, 1.916, -3.117),
+    #     (-0.320, 2.098, -1.119)
     # ]
     # navigate_waypoints = [
-    #     (0.653, -0.725, 0.034),
-    #     (1.732, 0.627, -1.553),
-    #     (-0.382, -1.936, -0.020)
+    #     (-0.237, -0.894, -2.056),
+    #     (-0.032, -1.363, -1.150),
+    #     (-0.618, -0.882, 2.528)
     # ]
 
-    # waypoints at frontlab_rat
+    # Full lab waypoint
     default_waypoints = [
-        (0.623, 0.871, 1.630),
-        (0.741, 1.916, -3.117),
-        (-0.320, 2.098, -1.119)
+        (1.732, -1.351, -0.791),
+        (2.667, -5.709, -1.619),
+        (0.448, -19.795, 1.704),
+        (-0.615, -25.67, 1.257)
     ]
     navigate_waypoints = [
-        (0.653, -0.725, 0.034),
-        (1.732, 0.627, -1.553),
-        (-0.382, -1.936, -0.020)
+        (-2.277, -16.45, -1.679),
+        (-2.342, -8.989, 3.090)
     ]
-
-
-
-    # inside lab waypoints
-    # default_waypoints = [
-    #     (1.831, 1.137, -1.631),
-    #     (2.852, 0.206, 3.044),
-    #     (0.167, 0.044, 0.064)
-    # ]
-    # navigate_waypoints = [
-    #     (0.653, -0.725, 0.034),
-    #     (1.732, 0.627, -1.553),
-    #     (-0.382, -1.936, -0.020)
-    # ]
-
-
-
-
-    # waypoints at lab (two)
-    # waypoints = [
-    # (1.498, -2.150, 1.495),
-    # (1.369, -0.537, 0),
-    # (1.692, 1.092, 0),
-    # (0.032, -0.011, -1.555)
-    # ]
-
-    # waypoints = [
-    #     (0.307, -1.146, 1.529),
-    #     (0.269, -0.557, 3.073),
-    #     (0.029, -0.250, 0.018),
-    # ]
-
-
-    # # for robotlab
-    # waypoints = [
-    #     (2.391, 0.243, 1.596),
-    #     (3.431, 2.005, -1.520),
-    #     (1.675, -0.156, 3.112),
-    #     (-0.061,0.119,0.060)
-    # ]
-
 
     try:
         while not rospy.is_shutdown() and not keyboard_controller.should_stop:
-             
             if navigate_waypoint_flag == 0:
                 waypoints = default_waypoints
                 print("Default waypoints selected!")
@@ -433,29 +416,23 @@ def main():
                 waypoints = navigate_waypoints
                 print("Navigation waypoints selected!")
 
-            for x, y, theta in waypoints:
-                # navigate_waypoint_flag_current = navigate_waypoint_flag
+            for i, (x, y, theta) in enumerate(waypoints):
                 if keyboard_controller.should_stop:
                     break
 
                 if navigate_waypoint_flag != (0 if waypoints == default_waypoints else 1):
                     print("Navigation mode changed, restarting with new waypoints")
                     break
-                
-                # if keyboard doesn't stop, move to the next waypoint
-                success = mba.moveToPoint(x, y, theta)
-
-               
+                print(i)
+                success = mba.moveToPoint(x, y, theta, i)
 
                 if not success:
                     print("Failed to reach waypoint, moving to next...")
                 rospy.sleep(1)
 
-            # After completing all waypoints in navigation mode, reset to default
             if navigate_waypoint_flag == 1 and waypoints == navigate_waypoints:
                 print("Navigation completed. Returning to default waypoints.")
 
-                # Send the state that the navigation is completed
                 global api_url_navigation_state
                 try:
                     response = requests.post(api_url_navigation_state)
@@ -464,14 +441,11 @@ def main():
                 except requests.exceptions.RequestException as e:
                     print(f"Error notifying Navigation status to server: {e}")
 
-                # Reset the navigate_waypoint_flag to 0. Returns to default waypoints
                 navigate_waypoint_flag = 0
 
-    # Handle the exception
     except rospy.ROSInterruptException:
         pass
 
-    # Finally, stop the keyboard controller and human detection
     finally:
         keyboard_controller.should_stop = True
         human_detector.stop()

@@ -81,7 +81,7 @@ class SpeechAssistant:
         headers = {"Botnoi-Token": self.botnoi_token, "Content-Type": "application/json"}
         payload = {
             "text": text,
-            "speaker": "2",
+            "speaker": "391",
             "volume": 1.5,
             "speed": 0.9,
             "type_media": "wav",
@@ -173,9 +173,9 @@ class SpeechAssistant:
                         self.llm_answer(llm_response)
 
                         # Uncomment the following lines if you want to use TTS
-                        # tts_audio = self.text_to_speech(llm_response)
-                        # if tts_audio:
-                        #     self.play_audio(tts_audio)
+                        tts_audio = self.text_to_speech(llm_response)
+                        if tts_audio:
+                            self.play_audio(tts_audio)
 
                     else:
                         print("LLM response failed.")
