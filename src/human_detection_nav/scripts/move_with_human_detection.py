@@ -40,7 +40,7 @@ class HumanDetector:
         )
 
     def start_detection(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(6)
         if not self.cap.isOpened():
             print("Error: Could not open webcam.")
             return
@@ -145,7 +145,7 @@ class HumanDetector:
 
                         # Face Recognized screen when the face is recognized and wait for button to press
                         while not (self.check_button_state("interactive") or self.check_button_state("navigation")):
-                            print("STAY IN THE LOOP!!")
+                            # print("STAY IN THE LOOP!!")
                             cv2.putText(frame, f"'{recognized_name}' is recognized. Press 'Interactive' button", (10, 30),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                             cv2.imshow('Human Detection', frame)
@@ -402,9 +402,16 @@ def main():
         (0.448, -19.795, 1.704),
         (-0.615, -25.67, 1.257)
     ]
+    # navigate_waypoints = [
+    #     (-2.277, -16.45, -1.679),
+    #     (-2.342, -8.989, 3.090)
+    # ]
+
     navigate_waypoints = [
-        (-2.277, -16.45, -1.679),
-        (-2.342, -8.989, 3.090)
+        (-0.074, -1.115, -2.918),
+        (2.985, -0.097, 0.332),
+        (1.853, 0.191, 1.876)
+
     ]
 
     try:
