@@ -167,7 +167,7 @@ class HumanDetector:
                                 print("Exiting interactive mode...")
 
                         # Check if the 'navigation' button is pressed
-                        if self.check_button_state("navigation"):
+                        elif self.check_button_state("navigation"):
                             navigate_waypoint_flag = 1
                             print("Change waypoint to 1")
                             print("Navigation mode activated")
@@ -409,7 +409,7 @@ def main():
 
     navigate_waypoints = [
         (-0.074, -1.115, -2.918),
-        (2.985, -0.097, 0.332),
+        (5.191, 1.051, 0.335),
         (1.853, 0.191, 1.876)
 
     ]
